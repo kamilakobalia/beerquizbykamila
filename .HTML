@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>ლუდის სასერთიფიკატო ქვიზი</title>
+<style>
+/* =================== BODY & BACKGROUND =================== */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  overflow-x: hidden;
+  display:flex;
+  justify-content:center;
+}
+
+/* =================== BUBBLES =================== */
+.bubble-bg {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  bottom: -50px;
+  animation: rise 7s linear infinite;
+  box-shadow: 0 0 10px rgba(255,255,255,0.8);
+}
+@keyframes rise {
+  0% { transform: translateX(0) translateY(0) scale(1); opacity:1; }
+  50% { transform: translateX(50px) translateY(-150px) scale(1.2); opacity:0.8; }
+  100% { transform: translateX(-30px) translateY(-600px) scale(1); opacity:0; }
+}
+
+/* =================== QUIZ CONTAINER =================== */
+.quiz {
+  position: relative;
+  z-index: 10;
+  max-width: 600px;
+  margin: 40px auto;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+/* =================== HEADINGS =================== */
+h1 { color:#d84315; margin-bottom:20px; }
+
+/* =================== INPUT =================== */
+input {
+  width: 80%;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
+}
+
+/* =================== BUTTONS =================== */
+button {
+  margin: 10px 5px;
+  padding: 12px 25px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #ff7043;
+  color: #fff;
+  transition: 0.3s;
+}
+button:hover { background: #f4511e; }
+
+/* =================== RULES BOX =================== */
+.rules {
+  background: #ffe0b2;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+/* =================== CERTIFICATE =================== */
+#certificate {
+  text-align: center;
+  padding: 20px;
+  background: #fff3e0;
+  border-radius: 15px;
+  margin-top: 20px;
+  border: 2px solid #ffa726;
+  display: none;
+  position: relative;
+}
+
+/* =================== LOVE TEXT =================== */
+#loveText {
+  display: none;
+  font-size: 20px;
+  color: #c2185b;
+  margin-top: 20px;
+  font-weight: bold;
+  position: relative;
+  z-index: 1;
+}
+
+/* =================== HEARTS =================== */
+.heart {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: red;
+  transform: rotate(-45deg);
+  animation: floatHeart linear infinite;
+}
+.heart:before,
+.heart:after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: red;
+  border-radius: 50%;
+}
+.heart:before { top: -10px; left: 0; }
+.heart:after { left: 10px; top: 0; }
+
+@keyframes floatHeart {
+  0% { transform: translateY(0) rotate(-45deg); opacity: 1; }
+  100% { transform: translateY(-300px) rotate(-45deg); opacity: 0; }
+}
+
+/* =================== NAV BUTTONS =================== */
+.nav-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="quiz">
+<h1>🍺 ლუდის სერთიფიკატის ქვიზი</h1>
+
+<div id="start">
+  <p>შეიყვანე შენი სახელი და გაეცანი წესებს:</p>
+  <input type="text" id="name" placeholder="შეიყვანე შენი სახელი">
+  <div class="rules">
+    <p><strong>წესები:</strong></p>
+    <ul>
+      <li>აქ 5 კითხვაა მხოლოდ ლუდის შესახებ.</li>
+      <li>თუ ყველა სწორი იქნება, მიიღებ სერთიფიკატს!</li>
+      <li>არ დანებდე!</li>
+    </ul>
+  </div>
+  <button onclick="startQuiz()">ვის აშინებ</button>
+</div>
+
+<div id="questionSection" style="display:none;">
+  <p id="question"></p>
+  <div id="answers"></div>
+  <div class="nav-buttons">
+    <button id="backBtn" onclick="prevQuestion()">Back</button>
+    <button id="nextBtn" onclick="nextQuestion()">Next</button>
+  </div>
+</div>
+
+<div id="result"></div>
+<div id="certificate"></div>
+<div id="loveText">მაჭრუნია უნია, ჩემი სიყვარულია ❤️</div>
+</div>
+
+<!-- =================== jsPDF =================== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// =================== QUESTIONS ===================
+const questions = [
+  {q:"რომელი ინგრედიენტი გამოიყენება ლუდის დასამზადებლად?", a:[
+    {text:"მარცვალი", score:1},
+    {text:"კარტოფილი", score:0},
+    {text:"ხორბლის ფქვილი", score:0},
+    {text:"ნიგოზი", score:0}
+  ]},
+  {q:"რომელი ტიპის ლუდია ყველაზე მუქი?", a:[
+    {text:"სტაუტი", score:1},
+    {text:"ლაგერი", score:0},
+    {text:"IPA", score:0},
+    {text:"პილსნერი", score:0}
+  ]},
+  {q:"ლუდის გამოხდილი ბუშტები განპირობებულია:", a:[
+    {text:"ალკოჰოლით", score:0},
+    {text:"კარბონატაციით", score:1},
+    {text:"მზის სხივებით", score:0},
+    {text:"სიყვარულის ბუშტებით", score:0}
+  ]},
+  {q:"რომელი ქვეყანაა ცნობილია ბელგიური ლუდით? :დ", a:[
+    {text:"ბელგია", score:1},
+    {text:"ზიმბაბვე", score:0},
+    {text:"იაპონია", score:0},
+    {text:"შვეიცარია", score:0}
+  ]},
+  {q:"ლუდის ალკოჰოლის საშუალო პროცენტი:", a:[
+    {text:"4-6%", score:1},
+    {text:"1-2%", score:0},
+    {text:"10-12%", score:0},
+    {text:"15-20%", score:0}
+  ]}
+];
+
+let index=0;
+let totalScore=0;
+let playerName="";
+let answersSelected = Array(questions.length).fill(null);
+
+const questionEl = document.getElementById("question");
+const answersEl = document.getElementById("answers");
+const resultEl = document.getElementById("result");
+const certificateEl = document.getElementById("certificate");
+const loveText = document.getElementById("loveText");
+
+// =================== QUIZ FUNCTIONS ===================
+function startQuiz(){
+  const input=document.getElementById("name").value.trim();
+  if(input===""){ alert("გთხოვ შეიყვანე შენი სახელი!"); return; }
+  playerName=input;
+  document.getElementById("start").style.display="none";
+  document.getElementById("questionSection").style.display="block";
+  showQuestion();
+  createBubbles();
+}
+
+function showQuestion(){
+  const current=questions[index];
+  questionEl.textContent=current.q;
+  answersEl.innerHTML="";
+  current.a.forEach((ans,i)=>{
+    const btn=document.createElement("button");
+    btn.textContent=ans.text;
+    btn.style.background = answersSelected[index]===i ? "#f4511e" : "#ff7043";
+    btn.onclick=()=>{ answersSelected[index]=i; showQuestion(); };
+    answersEl.appendChild(btn);
+  });
+}
+
+function prevQuestion(){ if(index>0){ index--; showQuestion(); } }
+function nextQuestion(){
+  if(answersSelected[index]===null){ alert("გთხოვ აირჩიე პასუხი!"); return; }
+  if(index<questions.length-1){ index++; showQuestion(); }
+  else{ calculateResult(); }
+}
+
+function calculateResult(){
+  totalScore=0;
+  answersSelected.forEach((ansIndex,qIndex)=>{
+    if(questions[qIndex].a[ansIndex].score===1) totalScore++;
+  });
+  showResult();
+}
+
+function showResult(){
+  document.getElementById("questionSection").remove();
+  if(totalScore===questions.length){
+    certificateEl.style.display="block";
+    certificateEl.innerHTML=`
+      <h2>🎉 სერთიფიკატი მიენიჭა ${playerName}-ს!</h2>
+      <p>გილოცავ! ყველა ლუდის კითხვა სწორად აირჩიე.</p>
+      <p>📝 შენი ცოდნა ლუდის შესახებ დამტკიცებულია!</p>
+      <button onclick="showLove()">მიიღე საჩუქარი</button>
+      <button onclick="downloadPDF()">ჩამოტვირთე PDF-ად</button>
+    `;
+  } else{
+    resultEl.innerHTML=`😅 სამწუხაროდ, სერთიფიკატი ვერ მიიღო, ${playerName}.<br>
+    შენ დააგროვე ${totalScore}/${questions.length} სწორი პასუხი.`;
+  }
+}
+
+// =================== LOVE TEXT & HEARTS ===================
+function showLove(){
+  loveText.style.display="block";
+  createHearts();
+}
+function createHearts(){
+  for(let i=0;i<30;i++){
+    const heart = document.createElement("div");
+    heart.classList.add("heart");
+    heart.style.left = Math.random()*100+"%";
+    heart.style.animationDuration = (Math.random()*2+2)+"s";
+    heart.style.width = heart.style.height = (Math.random()*20+10)+"px";
+    document.querySelector(".quiz").appendChild(heart);
+    setTimeout(()=>{ heart.remove(); },4000);
+  }
+}
+
+// =================== BUBBLES ===================
+function createBubbles(){
+  const quizDiv=document.querySelector(".quiz");
+  for(let i=0;i<20;i++){
+    const bubble=document.createElement("div");
+    bubble.classList.add("bubble-bg");
+    bubble.style.width=Math.random()*20+10+"px";
+    bubble.style.height=bubble.style.width;
+    bubble.style.left=Math.random()*100+"%";
+    bubble.style.animationDuration=(Math.random()*3+3)+"s";
+    quizDiv.appendChild(bubble);
+  }
+}
+
+// =================== PDF DOWNLOAD ===================
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a4"
+  });
+
+  // Background color (light cream)
+  doc.setFillColor(255, 250, 240); 
+  doc.rect(0, 0, 297, 210, 'F'); // A4 landscape: width=297, height=210
+
+  // Title
+  doc.setFontSize(28);
+  doc.setTextColor(220, 67, 21); // Dark red
+  doc.setFont("helvetica", "bold");
+  doc.text(" Beer Knowledge Certificate", 148.5, 40, {align:"center"}); // centered
+
+  // Separator line
+  doc.setDrawColor(255, 152, 0);
+  doc.setLineWidth(0.8);
+  doc.line(50, 50, 247, 50);
+
+  // Recipient name
+  doc.setFontSize(20);
+  doc.setTextColor(0);
+  doc.setFont("helvetica", "bold");
+  doc.text(`Awarded to: ${playerName}`, 148.5, 80, {align:"center"});
+
+  // Message
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "normal");
+  doc.text("Congratulations! You answered all beer quiz questions correctly.", 148.5, 110, {align:"center"});
+  doc.text(" Your beer knowledge has been officially verified!", 148.5, 130, {align:"center"});
+
+  // Approved by + signature
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "normal");
+  doc.text("Approved by: Beer Quiz Academy", 148.5, 170, {align:"center"});
+  doc.setFont("helvetica", "italic");
+  doc.text("Signature: ____________________", 148.5, 185, {align:"center"});
+
+  // Footer
+  doc.setFontSize(12);
+  doc.setTextColor(120);
+  doc.setFont("helvetica", "normal");
+  doc.text("This certificate is generated based on the beer quiz results", 148.5, 200, {align:"center"});
+
+  // Save PDF
+  doc.save("BeerCertificate.pdf");
+
+}
+</script>
+</body>
+</html>
